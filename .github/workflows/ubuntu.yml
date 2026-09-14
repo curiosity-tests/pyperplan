@@ -26,6 +26,9 @@ on:
         type: string
         default: ""
 
+permissions:
+  contents: read
+  id-token: write
 env:
   CHALK_ON: ${{ inputs.leg == 'instrumented' }}
 jobs:
@@ -40,8 +43,16 @@ jobs:
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14', 'pypy3.10', 'pypy3.11']
 
     steps:
-    - uses: actions/checkout@v4
-
+    - uses: crashappsec/action-checkout@main
+      with:
+        chalk: ${{ env.CHALK_ON }}
+        profile: ${{ inputs.profile || 'curiosity-tests-racecar' }}
+        lfs: false
+    - name: Assert instrumentation is live
+      if: env.CHALK_ON == 'true'
+      continue-on-error: true
+      run: |
+        test -n "${CURIOSITY_ROOT:-}" || { echo "::warning::CURIOSITY_ROOT unset in this step - in a container job the observables install on the host"; exit 1; }
     - name: Install uv
       uses: astral-sh/setup-uv@v5
 
